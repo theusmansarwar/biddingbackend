@@ -40,6 +40,7 @@ exports.placeBid = async (req, res) => {
       bidAmount,
     });
     await bid.save();
+    await bid.populate("bidder", "name email");
 
     // ✅ Link bid to product
     product.bids.push(bid._id);
@@ -49,7 +50,7 @@ exports.placeBid = async (req, res) => {
     if (io) {
       io.emit("bidUpdated", {
         productId,
-        bidderId,
+        bidderId: bid.bidder,
         bidAmount,
         nextMinBid: bidAmount + 1,
       });
