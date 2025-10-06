@@ -91,7 +91,11 @@ connectDB()
     // ✅ Allow all origins for Socket.io
     const io = new Server(server, {
       cors: {
-        origin: "*", // allow all origins
+       origin: [
+      "http://127.0.0.1:5173", // Vite default local URL
+      "http://localhost:5173", // sometimes vite uses localhost
+      "https://your-frontend-domain.com", // add if deployed
+    ],// allow all origins
         methods: ["GET", "POST"],
         credentials: true,
       },
