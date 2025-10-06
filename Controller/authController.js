@@ -35,7 +35,7 @@ exports.register = async (req, res) => {
 // Login
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password ,role} = req.body;
 
     if (!email || !password)
       return res.status(400).json({ status: 400, message: "Email and password are required" });
@@ -47,7 +47,7 @@ exports.login = async (req, res) => {
     if (!match) return res.status(400).json({status: 400, message: "Invalid credentials" });
 
     // ✅ Prevent user from logging into admin panel
-    if ( user.role !== "admin") {
+    if ( role && user.role !== "admin") {
       return res.status(403).json({status: 403, message: "Access denied: not an admin" });
     }
 
