@@ -14,6 +14,7 @@ const port = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
+app.use(cors({ origin: "*", methods: ["GET", "POST", "PUT", "DELETE"] }));
 app.use(express.json());
 
 // Routes
@@ -80,30 +81,36 @@ app.post("/upload-image", upload.single("image"), (req, res) => {
 });
 
 
-// Connect to DB and start server
+
+
+// ✅ Connect MongoDB and start server
 connectDB()
   .then(() => {
     const server = http.createServer(app);
 
+    // ✅ Allow all origins for Socket.io
     const io = new Server(server, {
       cors: {
-        origin: "*", // or your frontend domain
+        origin: "*", // allow all origins
         methods: ["GET", "POST"],
+        credentials: true,
       },
     });
 
-    // Pass socket instance to bid controller
+    // ✅ Make io globally available
+    global.io = io;
     setSocket(io);
 
-    // Handle socket connections
+    // ✅ Socket.io connection events
     io.on("connection", (socket) => {
-      console.log("🟢 New client connected:", socket.id);
+      console.log("🟢 Client connected:", socket.id);
 
       socket.on("disconnect", () => {
         console.log("🔴 Client disconnected:", socket.id);
       });
     });
 
+    // ✅ Start server
     server.listen(port, () => {
       console.log(`🚀 Server running on port ${port}`);
     });
