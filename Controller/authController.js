@@ -15,7 +15,7 @@ exports.register = async (req, res) => {
 
     const user = new userModel({ name, email, phone, password, role });
     await user.save();
-
+ const token = user.generateToken();
     res.status(201).json({
       message: "Registered successfully",
       data: {
@@ -25,6 +25,7 @@ exports.register = async (req, res) => {
         phone: user.phone,
         role: user.role,
       },
+      token
     });
   } catch (err) {
     res.status(500).json({ message: "Registration failed", error: err.message });
