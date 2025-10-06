@@ -10,7 +10,7 @@ exports.register = async (req, res) => {
     if (!name || !email || !phone || !password)
       return res.status(400).json({ message: "All fields are required" });
 
-    const existing = await User.findOne({ email });
+    const existing = await userModel.findOne({ email });
     if (existing) return res.status(400).json({ message: "Email already exists" });
 
     const user = new userModel({ name, email, phone, password, role });
@@ -66,7 +66,7 @@ exports.login = async (req, res) => {
 // Get all users (Admin only)
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select("-password").sort({ createdAt: -1 });
+    const users = await userModel.find().select("-password").sort({ createdAt: -1 });
     res.status(200).json(users);
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch users", error: err.message });
