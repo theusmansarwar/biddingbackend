@@ -93,10 +93,15 @@ exports.getProductsByUser = async (req, res) => {
 
     const total = await Product.countDocuments(query);
     const products = await Product.find(query)
-      .populate({
+       .populate({
         path: "bids",
         options: { sort: { bidAmount: -1 }, limit: 5 },
+        populate: {
+          path: "bidder", // 👈 populate bidder inside each bid
+          select: "name email phone", // choose which fields to return
+        },
       })
+      
       .sort({ auctionEndDate: 1 })
       .skip((page - 1) * limit)
       .limit(Number(limit));
@@ -117,7 +122,14 @@ exports.getProductsByUser = async (req, res) => {
 // ✅ Get single product (with all bids)
 exports.getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate("bids");
+    const product = await Product.findById(req.params.id) .populate({
+        path: "bids",
+        options: { sort: { bidAmount: -1 }, limit: 5 },
+        populate: {
+          path: "bidder", // 👈 populate bidder inside each bid
+          select: "name email phone", // choose which fields to return
+        },
+      })
     if (!product) return res.status(404).json({ status:  404, message: "Product not found" });
     res.status(200).json({ status:  200, product });
   } catch (err) {
