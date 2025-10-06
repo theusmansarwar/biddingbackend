@@ -35,26 +35,27 @@ exports.register = async (req, res) => {
 // Login
 exports.login = async (req, res) => {
   try {
-    const { email, password, isAdmin } = req.body;
+    const { email, password } = req.body;
 
     if (!email || !password)
-      return res.status(400).json({ message: "Email and password are required" });
+      return res.status(400).json({ status: 400, message: "Email and password are required" });
 
     const user = await userModel.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({status: 404, message: "User not found" });
 
     const match = await user.comparePassword(password);
-    if (!match) return res.status(400).json({ message: "Invalid credentials" });
+    if (!match) return res.status(400).json({status: 400, message: "Invalid credentials" });
 
     // ✅ Prevent user from logging into admin panel
-    if (isAdmin && user.role !== "admin") {
-      return res.status(403).json({ message: "Access denied: not an admin" });
+    if ( user.role !== "admin") {
+      return res.status(403).json({status: 403, message: "Access denied: not an admin" });
     }
 
     const token = user.generateToken();
     const { password: _, ...userData } = user.toObject();
 
     res.status(200).json({
+      status: 200,
       message: "Login successful",
       token,
       user: userData,

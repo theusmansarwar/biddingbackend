@@ -89,15 +89,35 @@ exports.producttop5Bid = async (req, res) => {
 // ✅ Get all bids paginated (all products)
 exports.getAllBids = async (req, res) => {
   try {
-    const bids = await Bid.find()               // get all bids
-      .populate("bidder", "name email")         // populate bidder info
-      .populate("product", "title minimumBid")  // populate product info
-      .sort({ createdAt: -1 });                 // newest first
+    // ✅ Read pagination query params (default page 1, limit 10)
+    let { page = 1, limit = 10 } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+    const skip = (page - 1) * limit;
 
-    res.status(200).json(bids);                 // return plain list
+    // ✅ Fetch paginated bids
+    const bids = await Bid.find()
+      .populate("bidder", "name email phone")
+      .populate("product", "title minimumBid")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    // ✅ Count total bids for pagination info
+    const totalBids = await Bid.countDocuments();
+    const totalPages = Math.ceil(totalBids / limit);
+
+    res.status(200).json({
+      message: "Bids fetched successfully",
+      bids,
+        page,
+        limit,
+        totalBids,
+        totalPages,
+      
+    });
   } catch (err) {
     console.error("❌ Error fetching all bids:", err);
     res.status(500).json({ error: err.message });
   }
-
 };
