@@ -83,3 +83,21 @@ exports.producttop5Bid = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
+
+// ✅ Get all bids paginated (all products)
+exports.getAllBids = async (req, res) => {
+  try {
+    const bids = await Bid.find()               // get all bids
+      .populate("bidder", "name email")         // populate bidder info
+      .populate("product", "title minimumBid")  // populate product info
+      .sort({ createdAt: -1 });                 // newest first
+
+    res.status(200).json(bids);                 // return plain list
+  } catch (err) {
+    console.error("❌ Error fetching all bids:", err);
+    res.status(500).json({ error: err.message });
+  }
+
+};
