@@ -19,6 +19,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/bids", bidRoutes);
 
+
 // Connect to DB and start server
 connectDB()
   .then(() => {
