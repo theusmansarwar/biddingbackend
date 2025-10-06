@@ -6,7 +6,9 @@ const path = require("path");
 const productRoutes = require("./Routes/productRoutes");
 const bidRoutes = require("./Routes/bidRoutes");
 const authRoutes = require("./Routes/authRoutes");
-
+const http = require("http");
+const { Server } = require("socket.io");
+const { setSocket } = require("./Controller/bidController");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -81,10 +83,31 @@ app.post("/upload-image", upload.single("image"), (req, res) => {
 // Connect to DB and start server
 connectDB()
   .then(() => {
-    app.listen(port, () => {
-      console.log(`🚀 Server is running on port ${port}`);
+    const server = http.createServer(app);
+
+    const io = new Server(server, {
+      cors: {
+        origin: "*", // or your frontend domain
+        methods: ["GET", "POST"],
+      },
+    });
+
+    // Pass socket instance to bid controller
+    setSocket(io);
+
+    // Handle socket connections
+    io.on("connection", (socket) => {
+      console.log("🟢 New client connected:", socket.id);
+
+      socket.on("disconnect", () => {
+        console.log("🔴 Client disconnected:", socket.id);
+      });
+    });
+
+    server.listen(port, () => {
+      console.log(`🚀 Server running on port ${port}`);
     });
   })
   .catch((err) => {
-    console.error("❌ Failed to connect to MongoDB:", err);
+    console.error("❌ MongoDB connection failed:", err);
   });

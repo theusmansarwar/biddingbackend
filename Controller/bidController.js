@@ -67,7 +67,7 @@ exports.placeBid = async (req, res) => {
 };
 
 // ✅ Get top 5 bids for a product
-exports.getTopBids = async (req, res) => {
+exports.producttop5Bid = async (req, res) => {
   try {
     const { productId } = req.params;
 
