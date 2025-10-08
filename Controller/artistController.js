@@ -6,7 +6,7 @@ const Product = require("../Models/Product");
 // ✅ Create Artist
 exports.createArtist = async (req, res) => {
   try {
-    const { artistName, artistBio, artistCountry, isActive, isFeatured,catalogFile } = req.body;
+    const { artistName, artistBio, artistCountry, isActive, isFeatured } = req.body;
 
     const missingFields = [];
     if (!artistName) missingFields.push({ name: "artistName", message: "Artist name is required" });
@@ -22,8 +22,7 @@ exports.createArtist = async (req, res) => {
       artistBio,
       artistCountry,
       isActive,
-      isFeatured,
-      catalogFile
+      isFeatured
     });
 
     await newArtist.save();
@@ -48,7 +47,7 @@ exports.updateArtist = async (req, res) => {
 
     const artist = await artistModel.findOneAndUpdate(
       { _id: req.params.id, isDeleted: false },
-      { artistName, artistBio, artistCountry, isActive, isFeatured,catalogFile },
+      { artistName, artistBio, artistCountry, isActive, isFeatured },
       { new: true, runValidators: true }
     );
 

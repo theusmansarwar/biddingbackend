@@ -13,6 +13,7 @@ exports.createProduct = async (req, res) => {
       auctionStartDate,
       auctionEndDate,
       soldOut,
+      catalogFile,
       isActive,
       artistId,
     } = req.body;
@@ -53,6 +54,7 @@ exports.createProduct = async (req, res) => {
       auctionEndDate,
       soldOut,
       isActive,
+      catalogFile,
       artist: artistId || null,
     });
 
@@ -75,6 +77,7 @@ exports.updateProduct = async (req, res) => {
       auctionStartDate,
       auctionEndDate,
       soldOut,
+      catalogFile,
       isActive,
       artistId,
     } = req.body;
