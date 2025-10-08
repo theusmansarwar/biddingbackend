@@ -180,10 +180,10 @@ exports.deleteMultipleProducts = async (req, res) => {
     }
 
     // ✅ Find all related bids first
-    const relatedBids = await Bid.find({ productId: { $in: validIds } });
+    const relatedBids = await Bid.find({ product: { $in: validIds } });
 
     // ✅ Delete all bids related to these products
-    await Bid.deleteMany({ productId: { $in: validIds } });
+    await Bid.deleteMany({ product: { $in: validIds } });
 
     // ✅ Delete the products themselves
     await Product.deleteMany({ _id: { $in: validIds } });
