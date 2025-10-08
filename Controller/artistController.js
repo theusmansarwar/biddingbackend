@@ -119,6 +119,37 @@ exports.getActiveArtists = async (req, res) => {
     res.status(500).json({ status: 500, error: err.message });
   }
 };
+exports.getActivefeaturedArtists = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = "" } = req.query;
+
+    const query = {
+      isActive: true,
+      isFeatured: true,
+      isDeleted: false,
+      $or: [
+        { artistName: { $regex: search, $options: "i" } },
+        { artistCountry: { $regex: search, $options: "i" } },
+      ],
+    };
+
+    const total = await artistModel.countDocuments(query);
+    const artists = await artistModel.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+
+    res.status(200).json({
+      status: 200,
+      total,
+      currentPage: Number(page),
+      totalPages: Math.ceil(total / limit),
+      artists,
+    });
+  } catch (err) {
+    res.status(500).json({ status: 500, error: err.message });
+  }
+};
 
 // ✅ Get Artist by ID
 exports.getArtistById = async (req, res) => {

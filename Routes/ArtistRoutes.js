@@ -7,6 +7,7 @@ const {
   updateArtist,
   getActiveArtists,
   deleteMultipleArtists,
+  getActivefeaturedArtists,
 } = require("../Controller/artistController");
 
 // ✅ Create new artist
@@ -17,6 +18,7 @@ router.get("/", getArtists);
 
 // ✅ Get artist list by user (if filtered)
 router.get("/list", getActiveArtists);
+router.get("/featured", getActivefeaturedArtists);
 
 // ✅ Get artist by ID
 router.get("/:id", getArtistById);
