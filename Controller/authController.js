@@ -86,7 +86,7 @@ exports.getAllUsers = async (req, res) => {
       : {};
 
     // ✅ Get total count (for pagination info)
-    const total = await userModel.countDocuments(query);
+    const totalUsers = await userModel.countDocuments(query);
 
     // ✅ Fetch users with pagination + search
     const users = await userModel
