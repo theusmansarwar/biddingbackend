@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const artistModel = require("../Models/artistModel");
 
+const Product = require("../Models/Product");
+
 // ✅ Create Artist
 exports.createArtist = async (req, res) => {
   try {
@@ -70,6 +72,7 @@ exports.getArtists = async (req, res) => {
       ],
     };
 
+   
     const total = await artistModel.countDocuments(query);
     const artists = await artistModel.find(query)
       .sort({ createdAt: -1 })
@@ -123,6 +126,7 @@ exports.getActivefeaturedArtists = async (req, res) => {
   try {
     const { page = 1, limit = 10, search = "" } = req.query;
 
+    // Artist query
     const query = {
       isActive: true,
       isFeatured: true,
@@ -133,23 +137,61 @@ exports.getActivefeaturedArtists = async (req, res) => {
       ],
     };
 
+    // Count total featured artists
     const total = await artistModel.countDocuments(query);
-    const artists = await artistModel.find(query)
+
+    // Fetch paginated featured artists
+    const artists = await artistModel
+      .find(query)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(Number(limit));
+      .limit(Number(limit))
+      .select("-isDeleted -isFeatured -isActive -updatedAt -createdAt -__v")
+      .lean();
 
+    // Get artist IDs
+    const artistIds = artists.map(a => a._id);
+
+    // Fetch products belonging to those artists
+    const products = await Product.find({
+      artist: { $in: artistIds },
+      isActive: true,
+      isDeleted: false,
+    })
+      .select("title image soldOut artist")
+      .lean();
+
+    // Group products by artistId (safe check)
+    const productsByArtist = {};
+    products.forEach(p => {
+      if (!p.artist) return; // 🧩 skip if no artist reference
+      const aid = p.artist.toString();
+      if (!productsByArtist[aid]) productsByArtist[aid] = [];
+      productsByArtist[aid].push(p);
+    });
+
+    // Merge products into each artist
+    const result = artists.map(a => ({
+      ...a,
+      products: productsByArtist[a._id.toString()] || [],
+    }));
+
+    // Send response
     res.status(200).json({
       status: 200,
       total,
       currentPage: Number(page),
       totalPages: Math.ceil(total / limit),
-      artists,
+      artists: result,
     });
   } catch (err) {
+    console.error("❌ Error fetching featured artists:", err);
     res.status(500).json({ status: 500, error: err.message });
   }
 };
+
+
+
 
 // ✅ Get Artist by ID
 exports.getArtistById = async (req, res) => {

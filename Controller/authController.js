@@ -120,7 +120,8 @@ exports.updateUser = async (req, res) => {
       id,
       { name, email, phone, role },
       { new: true }
-    );
+    )
+    ;
 
     if (!updatedUser)
       return res.status(404).json({ status: 404, message: "User not found" });
