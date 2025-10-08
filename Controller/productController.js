@@ -93,7 +93,7 @@ exports.updateProduct = async (req, res) => {
     }
 
     if (missingFields.length > 0) {
-      return res.status(400).json({ status: 400, message: "Validation failed", missingFields });
+      return res.status(400).json({ status: 400, message: "Some feilds are missing", missingFields });
     }
 
     // ✅ Validate artist before update
