@@ -96,7 +96,7 @@ exports.getAllBids = async (req, res) => {
     const skip = (page - 1) * limit;
 
     // ✅ Fetch paginated bids
-    const bids = await Bid.find()
+    const bids = await Bid.find({ isDeleted: false })
       .populate("bidder", "name email phone")
       .populate("product", "title minimumBid")
       .sort({ createdAt: -1 })
