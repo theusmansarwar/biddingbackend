@@ -102,7 +102,7 @@ exports.getAllUsers = async (req, res) => {
         totalUsers,
         page: pageNum,
         limit: limitNum,
-        totalPages: Math.ceil(total / limitNum),
+        totalPages: Math.ceil(totalUsers / limitNum),
       users,
     });
   } catch (err) {
