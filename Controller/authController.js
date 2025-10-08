@@ -1,8 +1,7 @@
-
 const bcrypt = require("bcryptjs");
 const userModel = require("../Models/userModel");
 
-// Register (for both users and admins)
+// ✅ Register
 exports.register = async (req, res) => {
   try {
     const { name, email, phone, password, role } = req.body;
@@ -15,7 +14,8 @@ exports.register = async (req, res) => {
 
     const user = new userModel({ name, email, phone, password, role });
     await user.save();
- const token = user.generateToken();
+    const token = user.generateToken();
+
     res.status(201).json({
       message: "Registered successfully",
       data: {
@@ -25,30 +25,35 @@ exports.register = async (req, res) => {
         phone: user.phone,
         role: user.role,
       },
-      token
+      token,
     });
   } catch (err) {
     res.status(500).json({ message: "Registration failed", error: err.message });
   }
 };
 
-// Login
+// ✅ Login (Block deleted users)
 exports.login = async (req, res) => {
   try {
-    const { email, password ,role} = req.body;
+    const { email, password, role } = req.body;
 
     if (!email || !password)
       return res.status(400).json({ status: 400, message: "Email and password are required" });
 
     const user = await userModel.findOne({ email });
-    if (!user) return res.status(404).json({status: 404, message: "User not found" });
+    if (!user) return res.status(404).json({ status: 404, message: "User not found" });
+
+    // ⛔ Check if user is deleted
+    if (user.isDeleted) {
+      return res.status(403).json({ status: 403, message: "This user has been deleted" });
+    }
 
     const match = await user.comparePassword(password);
-    if (!match) return res.status(400).json({status: 400, message: "Invalid credentials" });
+    if (!match) return res.status(400).json({ status: 400, message: "Invalid credentials" });
 
-    // ✅ Prevent user from logging into admin panel
-    if ( role && user.role !== "admin") {
-      return res.status(403).json({status: 403, message: "Access denied: not an admin" });
+    // ⛔ Prevent user from accessing admin panel
+    if (role && user.role !== "admin") {
+      return res.status(403).json({ status: 403, message: "Access denied: not an admin" });
     }
 
     const token = user.generateToken();
@@ -65,30 +70,25 @@ exports.login = async (req, res) => {
   }
 };
 
-// Get all users (Admin only)
+// ✅ Get all users
 exports.getAllUsers = async (req, res) => {
   try {
     const { page = 1, limit = 10, search = "" } = req.query;
-
-    // ✅ Convert query params to numbers
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
 
-    // ✅ Build search query
     const query = search
       ? {
+          isDeleted: false, // exclude deleted users
           $or: [
             { name: { $regex: search, $options: "i" } },
             { email: { $regex: search, $options: "i" } },
             { phone: { $regex: search, $options: "i" } },
           ],
         }
-      : {};
+      : { isDeleted: false };
 
-    // ✅ Get total count (for pagination info)
     const totalUsers = await userModel.countDocuments(query);
-
-    // ✅ Fetch users with pagination + search
     const users = await userModel
       .find(query)
       .select("-password")
@@ -99,18 +99,62 @@ exports.getAllUsers = async (req, res) => {
     res.status(200).json({
       status: 200,
       message: "User list fetched successfully",
-        totalUsers,
-        page: pageNum,
-        limit: limitNum,
-        totalPages: Math.ceil(totalUsers / limitNum),
+      totalUsers,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(totalUsers / limitNum),
       users,
     });
   } catch (err) {
-    console.error("Error fetching users:", err);
-    res.status(500).json({
-      status: 500,
-      message: "Failed to fetch users",
-      error: err.message,
+    res.status(500).json({ message: "Failed to fetch users", error: err.message });
+  }
+};
+
+// ✅ Update user
+exports.updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phone, role } = req.body;
+
+    const updatedUser = await userModel.findByIdAndUpdate(
+      id,
+      { name, email, phone, role },
+      { new: true }
+    );
+
+    if (!updatedUser)
+      return res.status(404).json({ status: 404, message: "User not found" });
+
+    res.status(200).json({
+      status: 200,
+      message: "User updated successfully",
+      user: updatedUser,
     });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update user", error: err.message });
+  }
+};
+
+// ✅ Soft Delete Multiple Users
+exports.deleteMultipleUsers = async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: "No user IDs provided" });
+    }
+
+    await userModel.updateMany(
+      { _id: { $in: ids } },
+      { $set: { isDeleted: true } }
+    );
+
+    res.status(200).json({
+      status: 200,
+      message: "Users marked as deleted successfully",
+      deletedIds: ids,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete users", error: err.message });
   }
 };

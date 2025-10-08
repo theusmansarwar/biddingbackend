@@ -17,6 +17,7 @@ const bidSchema = new mongoose.Schema(
       required: true,
       min: 1,
     },
+    isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

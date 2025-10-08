@@ -11,7 +11,8 @@ const ProductSchema = new mongoose.Schema(
     auctionEndDate: { type: Date, required: true },
     bids: [{ type: mongoose.Schema.Types.ObjectId, ref: "Bid" }],
     isActive: { type: Boolean, default: true },
-    artist:{ type: mongoose.Schema.Types.ObjectId, ref: "Artists" }
+    artist:{ type: mongoose.Schema.Types.ObjectId, ref: "Artists" },
+    isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -49,11 +49,10 @@ exports.getProducts = async (req, res) => {
     const { page = 1, limit = 10, search = "" } = req.query;
 
     const query = {
+       isDeleted: false,
       $or: [
         { title: { $regex: search, $options: "i" } },
         { description: { $regex: search, $options: "i" } },
-        { artistName: { $regex: search, $options: "i" } },
-        { artistCountry: { $regex: search, $options: "i" } },
       ],
     };
 
@@ -86,10 +85,10 @@ exports.getProductsByUser = async (req, res) => {
 
     const now = new Date();
     const query = {
+       isDeleted: false,
       isActive: true,
       $or: [
         { title: { $regex: search, $options: "i" } },
-        { artistName: { $regex: search, $options: "i" } },
       ],
     };
 
@@ -124,12 +123,12 @@ exports.getProductsByUser = async (req, res) => {
 // ✅ Get single product (with all bids)
 exports.getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id) .populate({
+    const product = await Product.findOne({ _id: req.params.id, isDeleted: false }) .populate({
         path: "bids",
         options: { sort: { bidAmount: -1 }, limit: 5 },
         populate: {
-          path: "bidder", // 👈 populate bidder inside each bid
-          select: "name email phone", // choose which fields to return
+          path: "bidder", 
+          select: "name email phone", 
         },
       })
     if (!product) return res.status(404).json({ status:  404, message: "Product not found" });
@@ -171,7 +170,7 @@ exports.deleteMultipleProducts = async (req, res) => {
     }
 
     // ✅ Validate ObjectIds to prevent CastError
-    const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
+    const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
     if (validIds.length === 0) {
       return res.status(400).json({
         status: 400,
@@ -179,18 +178,24 @@ exports.deleteMultipleProducts = async (req, res) => {
       });
     }
 
-    // ✅ Find all related bids first
-    const relatedBids = await Bid.find({ product: { $in: validIds } });
+    // ✅ Find all related bids
+    const relatedBids = await Bid.find({ product: { $in: validIds }, isDeleted: false });
 
-    // ✅ Delete all bids related to these products
-    await Bid.deleteMany({ product: { $in: validIds } });
+    // ✅ Soft delete related bids
+    await Bid.updateMany(
+      { product: { $in: validIds } },
+      { $set: { isDeleted: true } }
+    );
 
-    // ✅ Delete the products themselves
-    await Product.deleteMany({ _id: { $in: validIds } });
+    // ✅ Soft delete products
+    await Product.updateMany(
+      { _id: { $in: validIds } },
+      { $set: { isDeleted: true } }
+    );
 
     res.status(200).json({
       status: 200,
-      message: "Products and their related bids deleted successfully",
+      message: "Products and their related bids soft deleted successfully",
       deleted: {
         products: validIds.length,
         bids: relatedBids.length,

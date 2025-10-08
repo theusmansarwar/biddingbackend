@@ -8,6 +8,8 @@ const ArtistSchema = new mongoose.Schema(
     artistCountry: { type: String }, 
     isActive: { type: Boolean, default: true },
     isFeatured: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
+
 
   },
   { timestamps: true }
