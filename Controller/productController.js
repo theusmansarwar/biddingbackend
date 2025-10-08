@@ -154,18 +154,7 @@ exports.updateProduct = async (req, res) => {
   }
 };
 
-// ✅ Delete single product
-exports.deleteProduct = async (req, res) => {
-  try {
-    const product = await Product.findByIdAndDelete(req.params.id);
-    if (!product)
-      return res.status(404).json({ status:  false, message: "Product not found" });
 
-    res.status(200).json({ status:  200, message: "Product deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ status:  500, error: err.message });
-  }
-};
 
 // ✅ Delete multiple products
 exports.deleteMultipleProducts = async (req, res) => {
