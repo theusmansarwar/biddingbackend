@@ -1,3 +1,5 @@
+const mongoose = require("mongoose");
+const Bid = require("../Models/Bid");
 const Product = require("../Models/Product");
 
 // ✅ Create auction product
@@ -156,16 +158,46 @@ exports.updateProduct = async (req, res) => {
 
 
 
-// ✅ Delete multiple products
 exports.deleteMultipleProducts = async (req, res) => {
   try {
     const { ids } = req.body;
-    if (!Array.isArray(ids) || ids.length === 0)
-      return res.status(400).json({ status: 400, message: "Please provide an array of IDs" });
 
-    await Product.deleteMany({ _id: { $in: ids } });
-    res.status(200).json({ status:  200, message: "Products deleted successfully" });
+    // ✅ Validate input
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: "Please provide an array of IDs",
+      });
+    }
+
+    // ✅ Validate ObjectIds to prevent CastError
+    const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
+    if (validIds.length === 0) {
+      return res.status(400).json({
+        status: 400,
+        message: "No valid ObjectIds provided",
+      });
+    }
+
+    // ✅ Find all related bids first
+    const relatedBids = await Bid.find({ productId: { $in: validIds } });
+
+    // ✅ Delete all bids related to these products
+    await Bid.deleteMany({ productId: { $in: validIds } });
+
+    // ✅ Delete the products themselves
+    await Product.deleteMany({ _id: { $in: validIds } });
+
+    res.status(200).json({
+      status: 200,
+      message: "Products and their related bids deleted successfully",
+      deleted: {
+        products: validIds.length,
+        bids: relatedBids.length,
+      },
+    });
   } catch (err) {
-    res.status(500).json({ status:  false, error: err.message });
+    console.error("Error deleting products and bids:", err);
+    res.status(500).json({ status: false, error: err.message });
   }
 };
