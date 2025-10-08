@@ -1,56 +1,77 @@
 const mongoose = require("mongoose");
-const Bid = require("../Models/Bid");
-const Product = require("../Models/Product");
+const artistModel = require("../Models/artistModel");
 
-// ✅ Create auction product
-exports.createProduct = async (req, res) => {
+// ✅ Create Artist
+exports.createArtist = async (req, res) => {
   try {
-    const {
-      artistName,
-      artistBio,
-      artistCountry,
-    } = req.body;
+    const { artistName, artistBio, artistCountry, isActive, isFeatured } = req.body;
 
-    // Required field check
-    if (!title || !minimumBid || !auctionStartDate || !auctionEndDate || !artistName) {
-      return res.status(400).json({ error: "Missing required fields" });
+    const missingFields = [];
+    if (!artistName) missingFields.push({ name: "artistName", message: "Artist name is required" });
+    if (!artistBio) missingFields.push({ name: "artistBio", message: "Artist Bio is required" });
+    if (!artistCountry) missingFields.push({ name: "artistCountry", message: "Artist Country is required" });
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({ status: 400, message: "Validation failed", missingFields });
     }
 
-    const product = new Product({
+    const newArtist = new artistModel({
       artistName,
       artistBio,
       artistCountry,
+      isActive,
+      isFeatured,
     });
 
-    await product.save();
-    res.status(201).json({ status:  201, product });
+    await newArtist.save();
+    res.status(201).json({ status: 201, message: "Artist created successfully", artist: newArtist });
   } catch (err) {
-    res.status(500).json({ status:  500, error: err.message });
+    res.status(500).json({ status: 500, error: err.message });
   }
 };
 
+// ✅ Update Artist
+exports.updateArtist = async (req, res) => {
+  try {
+    const { artistName, artistBio, artistCountry, isActive, isFeatured } = req.body;
 
+    const missingFields = [];
+    if (!artistName) missingFields.push({ name: "artistName", message: "Artist name is required" });
+    if (!artistBio) missingFields.push({ name: "artistBio", message: "Artist Bio is required" });
+    if (!artistCountry) missingFields.push({ name: "artistCountry", message: "Artist Country is required" });
+    if (missingFields.length > 0) {
+      return res.status(400).json({ status: 400, message: "Validation failed", missingFields });
+    }
 
-// ✅ Admin: Get all auction products (Paginated + Search)
-exports.getProducts = async (req, res) => {
+    const artist = await artistModel.findOneAndUpdate(
+      { _id: req.params.id, isDeleted: false },
+      { artistName, artistBio, artistCountry, isActive, isFeatured },
+      { new: true, runValidators: true }
+    );
+
+    if (!artist) return res.status(404).json({ status: 404, message: "Artist not found or deleted" });
+
+    res.status(200).json({ status: 200, message: "Artist updated successfully", artist });
+  } catch (err) {
+    res.status(500).json({ status: 500, error: err.message });
+  }
+};
+
+// ✅ Get all Artists (Admin) — Paginated + Search
+exports.getArtists = async (req, res) => {
   try {
     const { page = 1, limit = 10, search = "" } = req.query;
 
     const query = {
+      isDeleted: false,
       $or: [
-        { title: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
         { artistName: { $regex: search, $options: "i" } },
         { artistCountry: { $regex: search, $options: "i" } },
       ],
     };
 
-    const total = await Product.countDocuments(query);
-    const products = await Product.find(query)
-      .populate({
-        path: "bids",
-        options: { sort: { bidAmount: -1 }, limit: 5 },
-      })
+    const total = await artistModel.countDocuments(query);
+    const artists = await artistModel.find(query)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit));
@@ -60,39 +81,30 @@ exports.getProducts = async (req, res) => {
       total,
       currentPage: Number(page),
       totalPages: Math.ceil(total / limit),
-      products,
+      artists,
     });
   } catch (err) {
     res.status(500).json({ status: 500, error: err.message });
   }
 };
 
-// ✅ User: Get only active + available products (Paginated + Search)
-exports.getProductsByUser = async (req, res) => {
+// ✅ Get only Active Artists (User)
+exports.getActiveArtists = async (req, res) => {
   try {
     const { page = 1, limit = 10, search = "" } = req.query;
 
-    const now = new Date();
     const query = {
       isActive: true,
+      isDeleted: false,
       $or: [
-        { title: { $regex: search, $options: "i" } },
         { artistName: { $regex: search, $options: "i" } },
+        { artistCountry: { $regex: search, $options: "i" } },
       ],
     };
 
-    const total = await Product.countDocuments(query);
-    const products = await Product.find(query)
-       .populate({
-        path: "bids",
-        options: { sort: { bidAmount: -1 }, limit: 5 },
-        populate: {
-          path: "bidder", // 👈 populate bidder inside each bid
-          select: "name email phone", // choose which fields to return
-        },
-      })
-      
-      .sort({ auctionEndDate: 1 })
+    const total = await artistModel.countDocuments(query);
+    const artists = await artistModel.find(query)
+      .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit));
 
@@ -101,91 +113,49 @@ exports.getProductsByUser = async (req, res) => {
       total,
       currentPage: Number(page),
       totalPages: Math.ceil(total / limit),
-      products,
+      artists,
     });
   } catch (err) {
     res.status(500).json({ status: 500, error: err.message });
   }
 };
 
-
-// ✅ Get single product (with all bids)
-exports.getProductById = async (req, res) => {
+// ✅ Get Artist by ID
+exports.getArtistById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id) .populate({
-        path: "bids",
-        options: { sort: { bidAmount: -1 }, limit: 5 },
-        populate: {
-          path: "bidder", // 👈 populate bidder inside each bid
-          select: "name email phone", // choose which fields to return
-        },
-      })
-    if (!product) return res.status(404).json({ status:  404, message: "Product not found" });
-    res.status(200).json({ status:  200, product });
+    const artist = await artistModel.findOne({ _id: req.params.id, isDeleted: false });
+    if (!artist) return res.status(404).json({ status: 404, message: "Artist not found" });
+    res.status(200).json({ status: 200, artist });
   } catch (err) {
-    res.status(500).json({ status:  500, error: err.message });
+    res.status(500).json({ status: 500, error: err.message });
   }
 };
 
-// ✅ Update product
-exports.updateProduct = async (req, res) => {
-  try {
-    const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!updatedProduct)
-      return res.status(404).json({ status:  404, message: "Product not found" });
-
-    res.status(200).json({ status:  200, product: updatedProduct });
-  } catch (err) {
-    res.status(500).json({ status:  500, error: err.message });
-  }
-};
-
-
-
-exports.deleteMultipleProducts = async (req, res) => {
+// ✅ Soft Delete Multiple Artists
+exports.deleteMultipleArtists = async (req, res) => {
   try {
     const { ids } = req.body;
 
-    // ✅ Validate input
     if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({
-        status: 400,
-        message: "Please provide an array of IDs",
-      });
+      return res.status(400).json({ status: 400, message: "Please provide an array of IDs" });
     }
 
-    // ✅ Validate ObjectIds to prevent CastError
-    const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
+    const validIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
     if (validIds.length === 0) {
-      return res.status(400).json({
-        status: 400,
-        message: "No valid ObjectIds provided",
-      });
+      return res.status(400).json({ status: 400, message: "No valid ObjectIds provided" });
     }
 
-    // ✅ Find all related bids first
-    const relatedBids = await Bid.find({ product: { $in: validIds } });
-
-    // ✅ Delete all bids related to these products
-    await Bid.deleteMany({ product: { $in: validIds } });
-
-    // ✅ Delete the products themselves
-    await Product.deleteMany({ _id: { $in: validIds } });
+    const result = await artistModel.updateMany(
+      { _id: { $in: validIds } },
+      { $set: { isDeleted: true } }
+    );
 
     res.status(200).json({
       status: 200,
-      message: "Products and their related bids deleted successfully",
-      deleted: {
-        products: validIds.length,
-        bids: relatedBids.length,
-      },
+      message: "Artists soft deleted successfully",
+      deletedCount: result.modifiedCount,
     });
   } catch (err) {
-    console.error("Error deleting products and bids:", err);
-    res.status(500).json({ status: false, error: err.message });
+    res.status(500).json({ status: 500, error: err.message });
   }
 };
