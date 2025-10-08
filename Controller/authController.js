@@ -68,9 +68,49 @@ exports.login = async (req, res) => {
 // Get all users (Admin only)
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await userModel.find().select("-password").sort({ createdAt: -1 });
-    res.status(200).json(users);
+    const { page = 1, limit = 10, search = "" } = req.query;
+
+    // ✅ Convert query params to numbers
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+
+    // ✅ Build search query
+    const query = search
+      ? {
+          $or: [
+            { name: { $regex: search, $options: "i" } },
+            { email: { $regex: search, $options: "i" } },
+            { phone: { $regex: search, $options: "i" } },
+          ],
+        }
+      : {};
+
+    // ✅ Get total count (for pagination info)
+    const total = await userModel.countDocuments(query);
+
+    // ✅ Fetch users with pagination + search
+    const users = await userModel
+      .find(query)
+      .select("-password")
+      .sort({ createdAt: -1 })
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum);
+
+    res.status(200).json({
+      status: 200,
+      message: "User list fetched successfully",
+        totalUsers,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      users,
+    });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch users", error: err.message });
+    console.error("Error fetching users:", err);
+    res.status(500).json({
+      status: 500,
+      message: "Failed to fetch users",
+      error: err.message,
+    });
   }
 };
