@@ -128,7 +128,7 @@ exports.softDeleteMultipleBids = async (req, res) => {
 
     // Validate input
     if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ message: "ids must be a non-empty array" });
+      return res.status(400).json({ status:400, message: "ids must be a non-empty array" });
     }
 
     // Soft delete all matching bids
@@ -138,8 +138,9 @@ exports.softDeleteMultipleBids = async (req, res) => {
     );
 
     res.status(200).json({
+      status:200,
       message: `${result.modifiedCount} bid(s) soft deleted successfully`,
-      result,
+     
     });
   } catch (err) {
     console.error("❌ Soft delete multiple error:", err);
