@@ -121,3 +121,38 @@ exports.getAllBids = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+// ✅ Soft delete a bid
+exports.softDeleteBid = async (req, res) => {
+  try {
+    const { bidId } = req.params;
+
+    // Validate input
+    if (!bidId) {
+      return res.status(400).json({ message: "Bid ID is required" });
+    }
+
+    // Find the bid
+    const bid = await Bid.findById(bidId);
+    if (!bid) {
+      return res.status(404).json({ message: "Bid not found" });
+    }
+
+    // Check if already deleted
+    if (bid.isDeleted) {
+      return res.status(400).json({ message: "Bid already deleted" });
+    }
+
+    // Soft delete (mark as deleted)
+    bid.isDeleted = true;
+    await bid.save();
+
+    res.status(200).json({
+      message: "Bid soft deleted successfully",
+      bid,
+    });
+  } catch (err) {
+    console.error("❌ Soft delete error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
