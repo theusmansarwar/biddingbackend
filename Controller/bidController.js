@@ -36,14 +36,14 @@ exports.placeBid = async (req, res) => {
      // ✅ Fetch product with only non-deleted bids
     const product = await Product.findById(productId).populate({
       path: "bids",
-      match: { deleted: false },
+      match: { isDeleted: false },
     });
 
     if (!product) return res.status(404).json({ message: "Product not found" });
     if (product.soldOut) return res.status(400).json({ message: "Auction closed" });
 
     // ✅ Determine the highest active bid (only non-deleted)
-    const activeBids = product.bids.filter(b => !b.deleted);
+    const activeBids = product.bids.filter(b => !b.isDeleted);
     const highestBid =
       activeBids.length > 0
         ? Math.max(...activeBids.map(b => b.bidAmount))
