@@ -109,12 +109,12 @@ exports.getActiveArtists = async (req, res) => {
     const artists = await artistModel.find(query)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(Number(limit));
+      .limit(limit);
 
     res.status(200).json({
       status: 200,
       total,
-      currentPage: Number(page),
+      currentPage:page,
       totalPages: Math.ceil(total / limit),
       artists,
     });

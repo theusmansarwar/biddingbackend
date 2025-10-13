@@ -10,7 +10,6 @@ const {
   getActivefeaturedArtists,
 } = require("../Controller/artistController");
 
-// ✅ Create new artist
 router.post("/", createArtist);
 
 // ✅ Get all artists

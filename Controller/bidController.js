@@ -17,7 +17,13 @@ const broadcastLatestBids = async () => {
       .sort({ createdAt: -1 })
       .limit(5);
 
-    if (io) io.emit("latestBids", latestBids);
+    if (socket) {
+      // Send only to one connected client
+      socket.emit("latestBids", latestBids);
+    } else if (io) {
+      // Broadcast to everyone
+      io.emit("latestBids", latestBids);
+    }
   } catch (err) {
     console.error("❌ Error broadcasting latest bids:", err);
   }
@@ -144,6 +150,7 @@ exports.getAllBids = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 exports.getLatest5Bids = async (req, res) => {
   try {
     const latestBids = await Bid.find({ isDeleted: false })
