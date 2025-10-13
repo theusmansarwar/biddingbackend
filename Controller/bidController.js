@@ -1,5 +1,6 @@
 const Bid = require("../Models/Bid");
 const Product = require("../Models/Product");
+const sendEmailToCompany = require("./emailverification");
 
 let io;
 
@@ -59,6 +60,7 @@ exports.placeBid = async (req, res) => {
     // ✅ Link bid to product
     product.bids.push(bid._id);
     await product.save();
+    await sendEmailToCompany(bid.bidder.name, bid.bidder.email, res);
 
     // ✅ Emit real-time update
     if (io) {
