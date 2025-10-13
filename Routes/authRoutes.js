@@ -14,8 +14,8 @@ router.post("/register", register);
 router.post("/login", login);
 
 // Admin-only routes
-router.get("/users", adminMiddleware, getAllUsers);
-router.put("/users/:id", adminMiddleware, updateUser);
-router.post("/users/delete-multiple", adminMiddleware, deleteMultipleUsers);
+router.get("/users", getAllUsers);
+router.put("/users/:id", updateUser);
+router.post("/users/delete-multiple",  deleteMultipleUsers);
 
 module.exports = router;
