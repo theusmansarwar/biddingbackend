@@ -1,15 +1,14 @@
 const nodemailer = require("nodemailer");
 
-// ✅ Setup transporter for your email (moawin-usa.org)
 const transporter = nodemailer.createTransport({
-  host: "moawin-usa.org", // Outgoing server
-  port: 465,              // SSL port
-  secure: true,           // Use SSL
-  auth: {
-    user: process.env.EMAIL_USER, // noreply@moawin-usa.org
-    pass: process.env.EMAIL_PASS, // email password
-  },
-});
+    host: "smtpout.secureserver.net", // GoDaddy SMTP server
+    port: 465, // Use 465 for SSL or 587 for TLS
+    secure: true, // True for port 465, false for 587
+    auth: {
+      user: process.env.EMAIL_USER, // Your GoDaddy email
+      pass: process.env.EMAIL_PASS, // Your GoDaddy email password
+    },
+  });
 
 // ✅ Send confirmation email to user & admin
 const sendEmailToCompany = async (name, email, res) => {
