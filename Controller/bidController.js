@@ -17,12 +17,9 @@ const broadcastLatestBids = async () => {
       .sort({ createdAt: -1 })
       .limit(5);
 
-    if (socket) {
-      // Send only to one connected client
-      socket.emit("latestBids", latestBids);
-    } else if (io) {
-      // Broadcast to everyone
-      io.emit("latestBids", latestBids);
+     if (io) {
+      io.emit("latestBids", latestBids); // ✅ Always broadcast to all connected clients
+      console.log("📡 Broadcasted latest bids:", latestBids.length);
     }
   } catch (err) {
     console.error("❌ Error broadcasting latest bids:", err);
