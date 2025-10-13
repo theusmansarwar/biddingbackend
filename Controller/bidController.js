@@ -33,15 +33,23 @@ exports.placeBid = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    const product = await Product.findById(productId).populate("bids");
+     // ✅ Fetch product with only non-deleted bids
+    const product = await Product.findById(productId).populate({
+      path: "bids",
+      match: { deleted: false },
+    });
+
     if (!product) return res.status(404).json({ message: "Product not found" });
     if (product.soldOut) return res.status(400).json({ message: "Auction closed" });
 
-    // ✅ Find highest bid or use minimumBid
-    const highestBid = product.bids.length > 0
-      ? Math.max(...product.bids.map((b) => b.bidAmount))
-      : product.minimumBid;
+    // ✅ Determine the highest active bid (only non-deleted)
+    const activeBids = product.bids.filter(b => !b.deleted);
+    const highestBid =
+      activeBids.length > 0
+        ? Math.max(...activeBids.map(b => b.bidAmount))
+        : product.minimumBid;
 
+    // ✅ Validation: must exceed highest bid
     if (bidAmount <= highestBid) {
       return res.status(400).json({
         message: `Next bid must be higher than $${highestBid}`,
@@ -51,7 +59,7 @@ exports.placeBid = async (req, res) => {
     // ✅ Save new bid
     const bid = new Bid({
       product: productId,
-      bidder: bidderId, // ← store bidder reference instead of name
+      bidder: bidderId,
       bidAmount,
     });
     await bid.save();
@@ -60,6 +68,7 @@ exports.placeBid = async (req, res) => {
     // ✅ Link bid to product
     product.bids.push(bid._id);
     await product.save();
+
     await sendEmailToCompany(bid.bidder.name, bid.bidder.email, res);
 
     // ✅ Emit real-time update
@@ -70,7 +79,7 @@ exports.placeBid = async (req, res) => {
         bidAmount,
         nextMinBid: bidAmount + 1,
       });
-        await broadcastLatestBids();
+      await broadcastLatestBids();
     }
 
     res.status(201).json({
@@ -101,8 +110,6 @@ exports.producttop5Bid = async (req, res) => {
   }
 };
 
-
-
 // ✅ Get all bids paginated (all products)
 exports.getAllBids = async (req, res) => {
   try {
@@ -127,11 +134,10 @@ exports.getAllBids = async (req, res) => {
     res.status(200).json({
       message: "Bids fetched successfully",
       bids,
-        page,
-        limit,
-        totalBids,
-        totalPages,
-      
+      page,
+      limit,
+      totalBids,
+      totalPages,
     });
   } catch (err) {
     console.error("❌ Error fetching all bids:", err);
@@ -162,7 +168,9 @@ exports.softDeleteMultipleBids = async (req, res) => {
 
     // Validate input
     if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ status:400, message: "ids must be a non-empty array" });
+      return res
+        .status(400)
+        .json({ status: 400, message: "ids must be a non-empty array" });
     }
 
     // Soft delete all matching bids
@@ -172,13 +180,11 @@ exports.softDeleteMultipleBids = async (req, res) => {
     );
 
     res.status(200).json({
-      status:200,
+      status: 200,
       message: `${result.modifiedCount} bid(s) soft deleted successfully`,
-     
     });
   } catch (err) {
     console.error("❌ Soft delete multiple error:", err);
     res.status(500).json({ error: err.message });
   }
 };
-
