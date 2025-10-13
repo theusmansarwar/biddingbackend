@@ -8,6 +8,20 @@ exports.setSocket = (socketInstance) => {
   io = socketInstance;
 };
 
+const broadcastLatestBids = async () => {
+  try {
+    const latestBids = await Bid.find({ isDeleted: false })
+      .populate("bidder", "name email")
+      .populate("product", "title minimumBid")
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    if (io) io.emit("latestBids", latestBids);
+  } catch (err) {
+    console.error("❌ Error broadcasting latest bids:", err);
+  }
+};
+
 // ✅ Place a new bid
 exports.placeBid = async (req, res) => {
   try {
@@ -54,6 +68,7 @@ exports.placeBid = async (req, res) => {
         bidAmount,
         nextMinBid: bidAmount + 1,
       });
+        await broadcastLatestBids();
     }
 
     res.status(201).json({
@@ -118,6 +133,23 @@ exports.getAllBids = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Error fetching all bids:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+exports.getLatest5Bids = async (req, res) => {
+  try {
+    const latestBids = await Bid.find({ isDeleted: false })
+      .populate("bidder", "name email phone")
+      .populate("product", "title minimumBid")
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    res.status(200).json({
+      message: "Latest 5 bids fetched successfully",
+      latestBids,
+    });
+  } catch (err) {
+    console.error("❌ Error fetching latest bids:", err);
     res.status(500).json({ error: err.message });
   }
 };
