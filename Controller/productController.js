@@ -208,6 +208,7 @@ exports.getProductById = async (req, res) => {
       .populate("artist", "artistName artistBio artistCountry")
       .populate({
         path: "bids",
+        match: { deleted: false }, 
         options: { sort: { bidAmount: -1 }, limit: 5 },
         populate: {
           path: "bidder",
