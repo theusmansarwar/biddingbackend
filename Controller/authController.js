@@ -10,7 +10,8 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
 
     const existing = await userModel.findOne({ email });
-    if (existing) return res.status(400).json({ message: "Email already exists" });
+    if (existing)
+      return res.status(400).json({ message: "Email already exists" });
 
     const user = new userModel({ name, email, phone, password, role });
     await user.save();
@@ -28,33 +29,38 @@ exports.register = async (req, res) => {
       token,
     });
   } catch (err) {
-    res.status(500).json({ message: "Registration failed", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Registration failed", error: err.message });
   }
 };
 
 // ✅ Login (Block deleted users)
 exports.login = async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password } = req.body;
 
     if (!email || !password)
-      return res.status(400).json({ status: 400, message: "Email and password are required" });
+      return res
+        .status(400)
+        .json({ status: 400, message: "Email and password are required" });
 
     const user = await userModel.findOne({ email });
-    if (!user) return res.status(404).json({ status: 404, message: "User not found" });
+    if (!user)
+      return res.status(404).json({ status: 404, message: "User not found" });
 
     // ⛔ Check if user is deleted
     if (user.isDeleted) {
-      return res.status(403).json({ status: 403, message: "This user has been deleted" });
+      return res
+        .status(403)
+        .json({ status: 403, message: "This user has been deleted" });
     }
 
     const match = await user.comparePassword(password);
-    if (!match) return res.status(400).json({ status: 400, message: "Invalid credentials" });
-
-    // ⛔ Prevent user from accessing admin panel
-    if (role && user.role !== "admin") {
-      return res.status(403).json({ status: 403, message: "Access denied: not an admin" });
-    }
+    if (!match)
+      return res
+        .status(400)
+        .json({ status: 400, message: "Invalid credentials" });
 
     const token = user.generateToken();
     const { password: _, ...userData } = user.toObject();
@@ -70,6 +76,51 @@ exports.login = async (req, res) => {
   }
 };
 
+// ✅ Login (Block deleted users)
+exports.adminLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password)
+      return res
+        .status(400)
+        .json({ status: 400, message: "Email and password are required" });
+
+    const user = await userModel.findOne({ email });
+    if (!user)
+      return res.status(404).json({ status: 404, message: "User not found" });
+
+    // ⛔ Check if user is deleted
+    if (user.isDeleted) {
+      return res
+        .status(403)
+        .json({ status: 403, message: "This user has been deleted" });
+    }
+
+    const match = await user.comparePassword(password);
+    if (!match)
+      return res
+        .status(400)
+        .json({ status: 400, message: "Invalid credentials" });
+    if (user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ status: 403, message: "Invalid credentials" });
+    }
+
+    const token = user.generateToken();
+    const { password: _, ...userData } = user.toObject();
+
+    res.status(200).json({
+      status: 200,
+      message: "Login successful",
+      token,
+      user: userData,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Login failed", error: err.message });
+  }
+};
 // ✅ Get all users
 exports.getAllUsers = async (req, res) => {
   try {
@@ -106,7 +157,9 @@ exports.getAllUsers = async (req, res) => {
       users,
     });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch users", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch users", error: err.message });
   }
 };
 
@@ -120,9 +173,7 @@ exports.updateUser = async (req, res) => {
       id,
       { name, email, phone, role },
       { new: true }
-    )
-    ;
-
+    );
     if (!updatedUser)
       return res.status(404).json({ status: 404, message: "User not found" });
 
@@ -132,7 +183,9 @@ exports.updateUser = async (req, res) => {
       user: updatedUser,
     });
   } catch (err) {
-    res.status(500).json({ message: "Failed to update user", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to update user", error: err.message });
   }
 };
 
@@ -156,6 +209,8 @@ exports.deleteMultipleUsers = async (req, res) => {
       deletedIds: ids,
     });
   } catch (err) {
-    res.status(500).json({ message: "Failed to delete users", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to delete users", error: err.message });
   }
 };

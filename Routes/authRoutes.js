@@ -12,6 +12,7 @@ const { authMiddleware, adminMiddleware } = require("../Middleware/authMiddlewar
 // Public routes
 router.post("/register", register);
 router.post("/login", login);
+router.post("/adminLogin", login);
 
 // Admin-only routes
 router.get("/users", getAllUsers);
