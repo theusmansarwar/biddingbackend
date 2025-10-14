@@ -6,13 +6,14 @@ const {
   getAllUsers,
   updateUser,
   deleteMultipleUsers,
+  adminLogin,
 } = require("../Controller/authController");
 const { authMiddleware, adminMiddleware } = require("../Middleware/authMiddleware");
 
 // Public routes
 router.post("/register", register);
 router.post("/login", login);
-router.post("/adminLogin", login);
+router.post("/adminLogin", adminLogin);
 
 // Admin-only routes
 router.get("/users", getAllUsers);
