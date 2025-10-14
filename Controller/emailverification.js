@@ -25,8 +25,9 @@ const sendEmailToCompany = async (name, email, res) => {
           </div>
           <div style="padding: 20px;">
             <p>Dear <strong>${name}</strong>,</p>
-            <p>Thank you for placing your bid on <strong>Moawin Auctions</strong>. Your bid has been recorded successfully.</p>
-            <p>We wish you the best of luck!</p>
+            <p>Thank you for placing your bid on <strong>Moawin Auctions</strong>. Your bid has been received and recorded successfully.</p>
+            <p> Stay tuned — we’ll update you shortly.</p>
+            <p> Thank you for your support,</p>
             <p style="margin-top: 20px;">– The Moawin Team</p>
           </div>
           <div style="background: #f1f1f1; text-align: center; padding: 10px; font-size: 12px; color: #555;">
